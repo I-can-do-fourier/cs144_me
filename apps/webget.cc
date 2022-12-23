@@ -34,28 +34,55 @@ void get_URL(const string &host, const string &path) {
 
     ts.connect(ad);
 
-    const char *mesg;
-    size_t size=ts.write(mesg,true);//默认是阻塞态
-
-    if(size<strlen(mesg)){
 
 
-    }
+
    
     /*
         
         request the bytestream from the path of the host
     */ 
 
-   
+    string mesg;
+
+    mesg="GET "+path+" HTTP/1.1\r\n";
+    mesg=mesg+"Host: "+host+"\r\n";
+    mesg=mesg+"Connection: close\r\n\r\n";//这里要敲两下回车
+  
+    
+    cout<<mesg<<endl;
+    //BufferViewList bf
+
+    size_t size=ts.write(mesg,true);//默认是阻塞态
+
+    if(size<strlen(mesg.c_str())){
+
+        printf("error000");
+        throw  runtime_error("write fewer bytes than needed");
+    }
+
+
 
    /*
    
     receive the bytes until the end of the file
    */
 
-    cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
-    cerr << "Warning: get_URL() has not been implemented yet.\n";
+    std::string s;
+    while(true){
+
+        if(ts.eof())break;
+        s=ts.read();
+        printf("%s",s.c_str());
+        //cout << s;
+        
+
+    }
+
+    //cout<<endl;
+
+    //cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
+    //cerr << "Warning: get_URL() has not been implemented yet.\n";
 }
 
 int main(int argc, char *argv[]) {

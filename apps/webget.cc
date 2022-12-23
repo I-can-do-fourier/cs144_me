@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <iostream>
 
+#include<string.h>
+
 using namespace std;
 
 void get_URL(const string &host, const string &path) {
@@ -16,6 +18,41 @@ void get_URL(const string &host, const string &path) {
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
+
+    /*
+        create a socket
+        needn't to use bind
+        
+    */
+
+     TCPSocket ts;
+     Address ad(host,"http");
+
+      /*
+        connect with host
+    */
+
+    ts.connect(ad);
+
+    const char *mesg;
+    size_t size=ts.write(mesg,true);//默认是阻塞态
+
+    if(size<strlen(mesg)){
+
+
+    }
+   
+    /*
+        
+        request the bytestream from the path of the host
+    */ 
+
+   
+
+   /*
+   
+    receive the bytes until the end of the file
+   */
 
     cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
     cerr << "Warning: get_URL() has not been implemented yet.\n";
@@ -49,3 +86,4 @@ int main(int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 }
+

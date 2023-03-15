@@ -2,6 +2,8 @@
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
 #include <string>
+#include<memory>
+#include<queue>
 
 //! \brief An in-order byte stream.
 
@@ -16,6 +18,14 @@ class ByteStream {
     // all, but if any of your tests are taking longer than a second,
     // that's a sign that you probably want to keep exploring
     // different approaches.
+
+    //
+    int capacity=0;
+    bool end=false;
+    int total_read=0;
+    int written=0;
+    std::string buffer="";
+    
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
 

@@ -55,7 +55,8 @@ void get_URL(const string &host, const string &path) {
 
     size_t size=ts.write(mesg,true);//默认是阻塞态
 
-    if(size<strlen(mesg.c_str())){
+    
+    if(size<mesg.size()){//避免strlen用法
 
         printf("error000");
         throw  runtime_error("write fewer bytes than needed");

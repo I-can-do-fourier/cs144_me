@@ -6,14 +6,29 @@
 #include <cstdint>
 #include <string>
 
+#include<map>
+
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
+
+
+std::string combine(const std::string &s1,const std::string &s2,const uint64_t index1,const uint64_t index2);
+
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+
+    size_t unassembled=0;
+    std::map<size_t,std::string> m;
+    size_t endIdx=SIZE_MAX;
+
+    void AddTempCash(const std::string &data, const size_t index);
+    int overflow(size_t n);
+    void printme();
+    void discard();
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
@@ -46,6 +61,7 @@ class StreamReassembler {
     //! \brief Is the internal state empty (other than the output stream)?
     //! \returns `true` if no substrings are waiting to be assembled
     bool empty() const;
+    
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH

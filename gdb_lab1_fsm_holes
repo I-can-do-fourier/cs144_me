@@ -1,0 +1,12 @@
+b AddTempCash if data.compare("a")==0
+display lb
+display rb
+display d
+display s
+display unassembled
+display _output.buffer_size()
+display _output.bytes_written()
+display endIdx
+display ecount
+display icount
+display _output.bytes_read()+_capacity-1

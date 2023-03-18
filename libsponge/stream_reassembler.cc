@@ -156,8 +156,10 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
         string ins=combine(fit->second,d,fit->first-fit->second.size()+1,lb);
         ins=combine(eit->second,ins,eit->first-eit->second.size()+1,min(lb,fit->first-fit->second.size()+1));
 
+        size_t right=eit->first;
         m.erase(fit,it);
-        m[max(rb,eit->first)]=ins;
+        //m[max(rb,eit->first)]=ins;不要使用已经被erased的元素
+        m[max(rb,right)]=ins;
         unassembled=unassembled+icount-ecount;
         
     }

@@ -18,8 +18,8 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 
     uint64_t ISN(isn.raw_value());
     n=n+ISN;
-    printf("%lu",n%UINT32_MAX);
-    cout<<n<<endl;
+    //printf("%lu",n%UINT32_MAX);
+    //cout<<n<<endl;
     //operator<<(isn);
     //cout<<isn;
     n=n%(1ll << 32);//UINT32_MAX不行；

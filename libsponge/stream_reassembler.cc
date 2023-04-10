@@ -96,21 +96,40 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
 
     }
     
-
+    //如果index和已经写入到stream的部分重合，就需要截断
     if(index<_output.bytes_written()){
 
+        //如果完全重合，返回
         if(rb<_output.bytes_written())return;
         d=data.substr(_output.bytes_written()-index,data.size());
         lb=_output.bytes_written();
     }
 
+
+    //判断data整体是否超出了capacity的范围(capacity定义见下方或pdf)
+    //超出部分需要截断
     if(overflow(rb)<0){
 
+        //完全超出，返回
         if(overflow(lb)<0)return;
 
         rb=_output.bytes_read()+_capacity-1;
         d=d.substr(0,rb-lb+1);
     }
+
+
+    /**
+     * 
+     * 将data放入map中,重叠部分需要合并
+     * 
+     * 大致思路
+     * 1.找到第一个重叠的期间in1
+     * 2.找到最后一块重叠的区间in2
+     * 3.将data与第一块和第二块重叠区间合并
+     * 4.删除[in1,in2]之间的区间,将合并后的区间放入map中
+     * 
+     * 需要注意边界情况
+    */
 
     auto it=m.lower_bound(lb);
 
@@ -125,6 +144,7 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
     //cout << it->first-it->second.size()+1-rb<<"\n";
     if(it==m.end()||(it->first-it->second.size()+1>rb)){
 
+        //不和任意的区域重叠，即在map尾部，直接放入
 
         icount=rb-lb+1;
 
@@ -139,7 +159,9 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
 
     }else{
 
-
+        
+  
+        //找到最后重叠的重叠部分
         while(it!=m.end()&&(it->first-it->second.size()+1<=rb)){
 
             ecount=ecount+it->second.size();
@@ -152,7 +174,7 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
 
         //if(overflow(icount-ecount))return;
 
-
+        //合并
         string ins=combine(fit->second,d,fit->first-fit->second.size()+1,lb);
         ins=combine(eit->second,ins,eit->first-eit->second.size()+1,min(lb,fit->first-fit->second.size()+1));
 
@@ -172,6 +194,7 @@ void StreamReassembler::AddTempCash(const std::string &data, const size_t index)
 
     //printme();
 
+    //将能够塞到steam的元素都塞进去
     auto be=m.begin();
     while(be!=m.end()&&_output.bytes_written()==(be->first-be->second.size()+1)){
 

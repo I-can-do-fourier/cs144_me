@@ -32,6 +32,29 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    /**
+     * 
+     * self defines
+     * 
+    */
+
+    //维护那些正在in-flight的segment
+    std::queue<TCPSegment> outstandings{};
+    uint64_t in_flights=0;
+
+    //在上次tick()时,距离RTO定时器启动以消耗的时间
+    size_t timePassed=0;
+
+    unsigned int RTO=0;
+
+   //count of “consecutive retransmissions”
+    unsigned int recount=0;
+
+    //window size
+    uint64_t window=1;
+
+    uint64_t window_right=0;
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,

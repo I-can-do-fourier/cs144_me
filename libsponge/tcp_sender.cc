@@ -4,6 +4,12 @@
 
 #include <random>
 
+#include "tcp_state.hh"
+
+#include <iostream>
+
+#include <sstream>
+
 // Dummy implementation of a TCP sender
 
 // For Lab 3, please replace with a real implementation that passes the
@@ -40,28 +46,66 @@ uint64_t TCPSender::bytes_in_flight() const {
 
 void TCPSender::fill_window() {
 
+    //cout<<next_seqno_absolute()<<" "<<window_right<<endl;
 
+
+    
+
+    unsigned long tcpMax=1452;
+
+    if(window==0&&(!stream_in().buffer_empty())){
+
+        send_one_byte_segment();
+        return;
+    }
+
+    if(window==0&&stream_in().buffer_empty()){
+
+        send_empty_segment();
+        return;
+    }
+
+    //if(stream_in().buffer_empty())return;
+    //cout<<next_seqno_absolute()<<endl;
     while(next_seqno_absolute()<=window_right){
 
+        //if(stream_in().eof()&&next_seqno_absolute() == stream_in().bytes_written() + 2&&in_flights>0)break;
+        // if(stream_in().buffer_empty()){
 
-        
+
+        //     if(next_seqno_absolute()>0)break;
+
+        // }
+        bool ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
+
+        //根据测试用例，似乎fin_ack之后就不能进来了
+        //bool Fin_Acked=stream_in().eof()&&next_seqno_absolute() == stream_in().bytes_written() + 2&&in_flights == 0;
+
+
+        if(next_seqno_absolute()>0&&stream_in().buffer_empty()&&!(ReadyToFin))break;
         TCPSegment seg{};
 
-        TCPHeader& hd=seg.header();
-        hd.seqno=next_seqno();
+        //TCPHeader  &hd=seg.header();
+        seg.header().seqno=next_seqno();
         
         int syn=0;
         //int fin=0;
+
+
         if(next_seqno_absolute()==0){
 
-            hd.syn=true;
+            //cout<<"syn"<<endl;
+            seg.header().syn=1;
             syn=1;//syn占一位
         }
         //Buffer load=seg.payload();不能这么用因为load此时相当于一个新的copy后的对象
         //Buffer& payload_data = seg.payload();这样表达是可以的
 
         //要减去syn,避免因为syn占位使segment超过了对面window的限制
-        std::string data=stream_in().read(window_right-syn-next_seqno_absolute()+1);
+
+
+        size_t dlen=min(window_right-syn-next_seqno_absolute()+1,tcpMax);
+        std::string data=stream_in().read(dlen);
         seg.payload()=std::string(data);//seg.payload()返回payload的reference。
                                         //其实就是seg种的payload
 
@@ -69,10 +113,11 @@ void TCPSender::fill_window() {
 
         _next_seqno=seg.length_in_sequence_space()+_next_seqno;
 
-        if(stream_in().eof()&&_next_seqno<=window_right){
+        if(stream_in().eof()&&_next_seqno<=window_right&&!fin_sent){
 
-            hd.fin=true;
+            seg.header().fin=1;
             _next_seqno++;
+            fin_sent=true;
         }
         
         //seg.length_in_sequence_space=data.size();
@@ -84,9 +129,25 @@ void TCPSender::fill_window() {
         
         in_flights=in_flights+seg.length_in_sequence_space();
         outstandings.push(seg);
-
+        
+        
+        //cout<<seg.header().summary()<<endl;
         segments_out().push(seg);
+
+        //std::ostringstream ss;
+        //cout<<next_seqno_absolute()<<" "<<in_flights<<" "<<seg.length_in_sequence_space()<<endl;
+
+        //if(stream_in().buffer_empty()&&!(stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2))break;
+
+        //if(Fin_Acked)break;
+
     }
+
+    //TCPState state{};
+
+    //cout<<segments_out().front().length_in_sequence_space()<<endl;
+    //cout<<state.state_summary(*this)<<endl;
+    
 
 }
 
@@ -98,11 +159,18 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     DUMMY_CODE(ackno, window_size); 
     
     
+    //TCPState state{};
+
+    //cout<<segments_out().front().length_in_sequence_space()<<endl;
+
     //ackno可能只acknowledge某个segment的一部分,但本lab不考虑这种。
     //如果只ack某个segment的一部分,该segment视为尚未被ack,不将其截断
     
     uint64_t ackabs= unwrap(ackno,_isn,stream_in().bytes_read());
+
+    if(ackabs>next_seqno_absolute())return;
     
+    //cout<<"ack:"<<ackabs<<" "<<window_size <<endl;
     window=window_size;
     if(ackabs+window_size-1>window_right)window_right=ackabs+window_size-1;
     
@@ -112,10 +180,10 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     bool rm=false;
     while(outstandings.size()!=0){
         
-        TCPSegment seg=outstandings.front();
+        TCPSegment& seg=outstandings.front();
 
         uint64_t last=seg.length_in_sequence_space()+unwrap(seg.header().seqno,_isn,stream_in().bytes_read())-1;
-
+        //cout<<"last"<<last<<endl;
         if(last<ackabs){
 
             rm=true;
@@ -134,6 +202,9 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         recount=0;
     }
 
+    //有空位就补上
+    //fill_window();
+
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
@@ -142,20 +213,26 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     
     DUMMY_CODE(ms_since_last_tick);
 
+    timePassed=ms_since_last_tick+timePassed;
+
     if(outstandings.size()==0)return;
     
-    if(ms_since_last_tick+timePassed>=RTO){
+
+
+    if(timePassed>=RTO){
 
         segments_out().push(outstandings.front());
+
+        if(window>0){
+
+            recount++;
+            RTO=RTO*2;
+        }
+
+        timePassed=0;    
     }
 
-    if(window>0){
 
-        recount++;
-        RTO=RTO*2;
-    }
-
-    timePassed=0;
     
  }
 
@@ -178,5 +255,26 @@ void TCPSender::send_empty_segment() {
 
    segments_out().push(seg);
 
+
+}
+
+void TCPSender::send_one_byte_segment(){
+
+   TCPSegment seg{};
+
+   
+   TCPHeader& hd=seg.header();
+
+   hd.seqno=next_seqno();
+
+   seg.payload()=std::string(stream_in().read(1));
+   
+   
+    _next_seqno++;
+   in_flights++;
+   outstandings.push(seg);
+
+
+   segments_out().push(seg);
 
 }

@@ -55,6 +55,13 @@ class TCPSender {
 
     uint64_t window_right=0;
 
+    //上一次ack的位置
+    uint64_t lastAck=0;
+
+    bool fin_sent=false;
+
+    void send_one_byte_segment();
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,

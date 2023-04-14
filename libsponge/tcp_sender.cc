@@ -53,17 +53,30 @@ void TCPSender::fill_window() {
 
     unsigned long tcpMax=1452;
 
-    if(window==0&&(!stream_in().buffer_empty())){
+    bool ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
 
-        send_one_byte_segment();
-        return;
+    if(window==0&&!probing){
+
+        if(!stream_in().buffer_empty()){
+
+            probing=true;
+            send_one_byte_segment(false);
+            return;
+        }else if(ReadyToFin){
+
+
+            probing=true;
+            send_one_byte_segment(true);
+            return;
+        }
+
     }
 
-    if(window==0&&stream_in().buffer_empty()){
+    // if(window==0&&stream_in().buffer_empty()){
 
-        send_empty_segment();
-        return;
-    }
+    //     send_empty_segment();
+    //     return;
+    // }
 
     //if(stream_in().buffer_empty())return;
     //cout<<next_seqno_absolute()<<endl;
@@ -76,7 +89,32 @@ void TCPSender::fill_window() {
         //     if(next_seqno_absolute()>0)break;
 
         // }
-        bool ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
+        ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
+
+        
+        // if(window==0){
+
+        //     if(!probing){
+                
+        //         if(ReadyToFin){
+
+        //             probing=true;
+        //             send_one_byte_segment(true);
+        //             return;
+        //         }else if(!stream_in().buffer_empty()){
+
+        //             probing=true;
+        //             send_one_byte_segment(false);
+        //             return;
+
+        //         }
+
+                
+        //     }else return;o
+
+        //     if(probing||(!ReadyToFin))return;
+
+        // }
 
         //根据测试用例，似乎fin_ack之后就不能进来了
         //bool Fin_Acked=stream_in().eof()&&next_seqno_absolute() == stream_in().bytes_written() + 2&&in_flights == 0;
@@ -172,7 +210,13 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     
     //cout<<"ack:"<<ackabs<<" "<<window_size <<endl;
     window=window_size;
-    if(ackabs+window_size-1>window_right)window_right=ackabs+window_size-1;
+    //if(window>0)probing=false;
+    bool window_move=false;
+    if(ackabs+window_size-1>window_right){
+
+        window_move=true;
+        window_right=ackabs+window_size-1;
+    }
     
     //if(outstandings.size()==0||)
     
@@ -195,8 +239,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
     }
 
+    if(window_move)probing=false;
+
     if(rm){
 
+        //probing=false;//只要被ack了任何一个seg,就说明probing结束了
         RTO=_initial_retransmission_timeout;
         if(outstandings.size()>0)timePassed=0;
         recount=0;
@@ -258,7 +305,7 @@ void TCPSender::send_empty_segment() {
 
 }
 
-void TCPSender::send_one_byte_segment(){
+void TCPSender::send_one_byte_segment(bool f){
 
    TCPSegment seg{};
 
@@ -267,7 +314,9 @@ void TCPSender::send_one_byte_segment(){
 
    hd.seqno=next_seqno();
 
-   seg.payload()=std::string(stream_in().read(1));
+   if(f)hd.fin=true;
+   else seg.payload()=std::string(stream_in().read(1));
+   
    
    
     _next_seqno++;

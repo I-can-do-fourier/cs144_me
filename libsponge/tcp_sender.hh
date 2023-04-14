@@ -60,7 +60,9 @@ class TCPSender {
 
     bool fin_sent=false;
 
-    void send_one_byte_segment();
+    bool probing=false;
+
+    void send_one_byte_segment(bool f);
 
   public:
     //! Initialize a TCPSender

@@ -55,6 +55,17 @@ void TCPSender::fill_window() {
 
     bool ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
 
+    /**
+     * 
+     * sender因为window的size不能发出时,有两种情况
+     * 1. window==0
+     * 2. window!=0 _next_seqno=window_right+1
+     * 
+     * 只有当window==0时才会probing。第二种情况不会触发probing。第二种情况情况相当于sender
+       发送了一些segment，直到填满window。但这些segment并没有全部被ack。此时不能发送额外的probing
+     * 
+     * 第一种情况要不第二种情况更极端。
+    */
     if(window==0&&!probing){
 
         if(!stream_in().buffer_empty()){
@@ -72,6 +83,9 @@ void TCPSender::fill_window() {
 
     }
 
+
+    
+    //暂时不能考虑发送空包的情况
     // if(window==0&&stream_in().buffer_empty()){
 
     //     send_empty_segment();
@@ -89,6 +103,8 @@ void TCPSender::fill_window() {
         //     if(next_seqno_absolute()>0)break;
 
         // }
+
+        //
         ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
 
         
@@ -119,7 +135,7 @@ void TCPSender::fill_window() {
         //根据测试用例，似乎fin_ack之后就不能进来了
         //bool Fin_Acked=stream_in().eof()&&next_seqno_absolute() == stream_in().bytes_written() + 2&&in_flights == 0;
 
-
+        //只有当处于CLOSED、ReadyToFin（就差一个fin）时，才允许payload为空
         if(next_seqno_absolute()>0&&stream_in().buffer_empty()&&!(ReadyToFin))break;
         TCPSegment seg{};
 
@@ -151,6 +167,7 @@ void TCPSender::fill_window() {
 
         _next_seqno=seg.length_in_sequence_space()+_next_seqno;
 
+        //!fin_sent这个判断应该是可以不要了
         if(stream_in().eof()&&_next_seqno<=window_right&&!fin_sent){
 
             seg.header().fin=1;
@@ -239,6 +256,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
     }
 
+    //只要window 的右侧移动了,必定说明probing完成(当然probing也许本来就没开始,不影响)
     if(window_move)probing=false;
 
     if(rm){
@@ -250,6 +268,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     }
 
     //有空位就补上
+    //test中会自动调用fill_window().所以此处不能调
     //fill_window();
 
 }

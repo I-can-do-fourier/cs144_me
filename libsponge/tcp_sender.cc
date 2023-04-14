@@ -276,6 +276,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) { 
     
+    //将tick和retransmission合在一起。没有单独设置RTO timer
     
     DUMMY_CODE(ms_since_last_tick);
 
@@ -324,6 +325,10 @@ void TCPSender::send_empty_segment() {
 
 }
 
+
+/*
+    支持发送单个finsegment
+*/
 void TCPSender::send_one_byte_segment(bool f){
 
    TCPSegment seg{};

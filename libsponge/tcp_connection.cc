@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+#include "tcp_state.hh"
+
+
+
 // Dummy implementation of a TCP connection
 
 // For Lab 4, please replace with a real implementation that passes the
@@ -29,25 +33,80 @@ size_t TCPConnection::unassembled_bytes() const {
     return _receiver.unassembled_bytes();
 }
 
-size_t TCPConnection::time_since_last_segment_received() const { return {}; }
+size_t TCPConnection::time_since_last_segment_received() const { 
+    
+    return _time_since_last_segment_received;
+}
 
-void TCPConnection::segment_received(const TCPSegment &seg) { DUMMY_CODE(seg); }
+void TCPConnection::segment_received(const TCPSegment &seg) { 
+    
+    
+    DUMMY_CODE(seg); 
+    
+    
+
+}
 
 bool TCPConnection::active() const { 
     
 
-    return true;
+    return _active;
  }
 
 size_t TCPConnection::write(const string &data) {
     DUMMY_CODE(data);
-    return {};
+
+    size_t res= _sender.stream_in().write(data);
+
+    _sender.fill_window();
+    
+    return res;
+
 }
 
 //! \param[in] ms_since_last_tick number of milliseconds since the last call to this method
-void TCPConnection::tick(const size_t ms_since_last_tick) { DUMMY_CODE(ms_since_last_tick); }
+void TCPConnection::tick(const size_t ms_since_last_tick) { 
+    
+    DUMMY_CODE(ms_since_last_tick); 
+    
+    _sender.tick(ms_since_last_tick);
+    _time_since_last_segment_received=_time_since_last_segment_received+ms_since_last_tick;
 
-void TCPConnection::end_input_stream() {}
+    TCPState st_tw(TCPState::State::TIME_WAIT);
+    if(state()==st_tw){
+
+        _since_time_wait=_since_time_wait+ms_since_last_tick;
+        
+        if(_since_time_wait>10*_cfg.rt_timeout){
+
+            _linger_after_streams_finish=false;
+            _active=false;
+        }
+
+        //return;
+
+    }else if(_active&&_sender.consecutive_retransmissions()>TCPConfig::MAX_RETX_ATTEMPTS){
+
+        _active=false;
+        
+        _sender.stream_in().set_error();
+        _receiver.stream_out().set_error();
+        _linger_after_streams_finish=false;
+
+        _sender.send_empty_segment_RST();
+
+        //return；
+    }
+
+    
+
+}
+
+void TCPConnection::end_input_stream() {
+
+
+    _sender.stream_in().end_input();
+}
 
 void TCPConnection::connect() {
 

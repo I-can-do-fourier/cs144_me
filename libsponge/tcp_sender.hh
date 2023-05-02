@@ -64,6 +64,8 @@ class TCPSender {
 
     void send_one_byte_segment(bool f);
 
+
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
@@ -119,6 +121,8 @@ class TCPSender {
     //! \brief relative seqno for the next byte to be sent
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
     //!@}
+
+    void send_empty_segment_RST();
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_SENDER_HH

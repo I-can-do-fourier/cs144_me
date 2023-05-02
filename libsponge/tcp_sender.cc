@@ -325,6 +325,24 @@ void TCPSender::send_empty_segment() {
 
 }
 
+void TCPSender::send_empty_segment_RST() {
+
+
+   
+    TCPSegment seg{};
+
+
+   TCPHeader& hd=seg.header();
+
+   hd.seqno=next_seqno();
+   
+   hd.rst=true;
+
+   segments_out().push(seg);
+
+
+}
+
 
 /*
     支持发送单个finsegment

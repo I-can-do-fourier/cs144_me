@@ -51,7 +51,7 @@ void TCPSender::fill_window() {
 
     
 
-    unsigned long tcpMax=1452;
+    unsigned long tcpMax=TCPConfig::MAX_PAYLOAD_SIZE;
 
     bool ReadyToFin=stream_in().eof()&&next_seqno_absolute() < stream_in().bytes_written() + 2;
 

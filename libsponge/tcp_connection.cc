@@ -63,10 +63,12 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     if(seg.length_in_sequence_space()>0){
 
         _sender.fill_window();
+        seg_2_seg();
     }
 
      if (_receiver.ackno().has_value()&&seg.length_in_sequence_space() == 0 ) {
          _sender.send_empty_segment();
+         seg_2_seg();
     }   
 
 }
@@ -84,6 +86,7 @@ size_t TCPConnection::write(const string &data) {
 
     _sender.fill_window();
     
+    seg_2_seg();
     return res;
 
 }
@@ -116,6 +119,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
 
         _sender.send_empty_segment_RST();
+        seg_2_seg();
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
         _linger_after_streams_finish=false;
@@ -136,6 +140,8 @@ void TCPConnection::end_input_stream() {
 void TCPConnection::connect() {
 
     _sender.fill_window();
+
+    seg_2_seg();
 }
 
 TCPConnection::~TCPConnection() {
@@ -150,10 +156,24 @@ TCPConnection::~TCPConnection() {
             _linger_after_streams_finish=false;
 
             _sender.send_empty_segment_RST();
+            seg_2_seg();
             _sender.stream_in().set_error();
             _receiver.stream_out().set_error();
         }
     } catch (const exception &e) {
         std::cerr << "Exception destructing TCP FSM: " << e.what() << std::endl;
     }
+}
+
+//
+void TCPConnection::seg_2_seg(){
+
+
+    while(!_sender.segments_out().empty()){
+
+        segments_out().push(_sender.segments_out().front());
+        _sender.segments_out().pop();
+
+    }
+
 }

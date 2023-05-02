@@ -27,6 +27,8 @@ class TCPConnection {
     size_t _time_since_last_segment_received=0;
     bool _active=true;
     size_t _since_time_wait=0;
+
+    void seg_2_seg();
   public:
     //! \name "Input" interface for the writer
     //!@{

@@ -85,12 +85,12 @@ void TCPSender::fill_window() {
 
 
     
-    //暂时不能考虑发送空包的情况
-    if(window==0&&stream_in().buffer_empty()){
+    // //暂时不能考虑发送空包的情况
+    // if(window==0&&stream_in().buffer_empty()){
 
-        send_empty_segment();
-        return;
-    }
+    //     send_empty_segment();
+    //     return;
+    // }
 
     //if(stream_in().buffer_empty())return;
     //cout<<next_seqno_absolute()<<endl;

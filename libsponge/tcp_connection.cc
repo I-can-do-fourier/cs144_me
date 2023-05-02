@@ -43,7 +43,31 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     
     DUMMY_CODE(seg); 
     
+    const TCPHeader& hd=seg.header();
+
+    if(hd.rst){
+        _sender.stream_in().set_error();
+        _receiver.stream_out().set_error();
+        _active=false;
+        _linger_after_streams_finish=false;
+
+        return;
+    }
     
+    _receiver.segment_received(seg);
+    if(hd.ack){
+
+        _sender.ack_received(hd.ackno,hd.win);
+    }
+
+    if(seg.length_in_sequence_space()>0){
+
+        _sender.fill_window();
+    }
+
+     if (_receiver.ackno().has_value()&&seg.length_in_sequence_space() == 0 ) {
+         _sender.send_empty_segment();
+    }   
 
 }
 
@@ -89,11 +113,12 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
         _active=false;
         
+
+
+        _sender.send_empty_segment_RST();
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
         _linger_after_streams_finish=false;
-
-        _sender.send_empty_segment_RST();
 
         //return；
     }
@@ -119,6 +144,14 @@ TCPConnection::~TCPConnection() {
             cerr << "Warning: Unclean shutdown of TCPConnection\n";
 
             // Your code here: need to send a RST segment to the peer
+            
+
+            _active=false;
+            _linger_after_streams_finish=false;
+
+            _sender.send_empty_segment_RST();
+            _sender.stream_in().set_error();
+            _receiver.stream_out().set_error();
         }
     } catch (const exception &e) {
         std::cerr << "Exception destructing TCP FSM: " << e.what() << std::endl;

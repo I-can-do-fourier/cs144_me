@@ -74,5 +74,11 @@ df -h
 lsblk /dev/vda
 ```
 
+## tcp流量转发工具
+    socat
+
+
+
+
 
 

@@ -71,21 +71,24 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 
         _sender.ack_received(hd.ackno,hd.win);
         
+        _sender.fill_window();
     }
 
     if(seg.length_in_sequence_space()>0){
 
-        seg_2_seg();    
-        _sender.fill_window();
+        //seg_2_seg();    
+        //_sender.fill_window();
         if(_sender.segments_out().empty())_sender.send_empty_segment();
-        seg_2_seg();
+        //seg_2_seg();
     }
 
      if (_receiver.ackno().has_value()&&seg.length_in_sequence_space() == 0&&
          seg.header().seqno == _receiver.ackno().value() - 1) {
-         _sender.send_empty_segment();
-         seg_2_seg();
-    }   
+         if(_sender.segments_out().empty())_sender.send_empty_segment();
+         //seg_2_seg();
+    }  
+
+    seg_2_seg();
 
 }
 

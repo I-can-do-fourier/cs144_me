@@ -19,7 +19,7 @@ using namespace std;
 size_t TCPConnection::remaining_outbound_capacity() const { 
     
 
-    return _sender.stream_in().buffer_size();
+    return _sender.stream_in().remaining_capacity();
 }
 
 size_t TCPConnection::bytes_in_flight() const { 
@@ -45,6 +45,13 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     
     const TCPHeader& hd=seg.header();
 
+    _time_since_last_segment_received=0;
+
+    //std::string state=TCPState::state_summary(_sender);
+
+    
+
+
     if(hd.rst){
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
@@ -53,20 +60,29 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 
         return;
     }
+
+    if(hd.fin&&(!_sender.stream_in().eof()||_sender.next_seqno_absolute()<_sender.stream_in().bytes_written() + 2)){
+
+        _linger_after_streams_finish=false;
+    }
     
     _receiver.segment_received(seg);
     if(hd.ack){
 
         _sender.ack_received(hd.ackno,hd.win);
+        
     }
 
     if(seg.length_in_sequence_space()>0){
 
+        seg_2_seg();    
         _sender.fill_window();
+        if(_sender.segments_out().empty())_sender.send_empty_segment();
         seg_2_seg();
     }
 
-     if (_receiver.ackno().has_value()&&seg.length_in_sequence_space() == 0 ) {
+     if (_receiver.ackno().has_value()&&seg.length_in_sequence_space() == 0&&
+         seg.header().seqno == _receiver.ackno().value() - 1) {
          _sender.send_empty_segment();
          seg_2_seg();
     }   
@@ -85,7 +101,7 @@ size_t TCPConnection::write(const string &data) {
     size_t res= _sender.stream_in().write(data);
 
     _sender.fill_window();
-    
+
     seg_2_seg();
     return res;
 
@@ -104,7 +120,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
         _since_time_wait=_since_time_wait+ms_since_last_tick;
         
-        if(_since_time_wait>10*_cfg.rt_timeout){
+        if(_since_time_wait>=10*_cfg.rt_timeout){
 
             _linger_after_streams_finish=false;
             _active=false;
@@ -125,6 +141,9 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         _linger_after_streams_finish=false;
 
         //return；
+    }else{
+
+        seg_2_seg();
     }
 
     
@@ -135,6 +154,9 @@ void TCPConnection::end_input_stream() {
 
 
     _sender.stream_in().end_input();
+    
+    _sender.fill_window();
+    seg_2_seg();
 }
 
 void TCPConnection::connect() {
@@ -171,8 +193,17 @@ void TCPConnection::seg_2_seg(){
 
     while(!_sender.segments_out().empty()){
 
-        segments_out().push(_sender.segments_out().front());
+        TCPSegment& seg=_sender.segments_out().front();
         _sender.segments_out().pop();
+
+        if(_receiver.ackno().has_value()){
+
+            seg.header().ack=true;
+            seg.header().ackno=*_receiver.ackno();
+            seg.header().win=_receiver.window_size();
+        }
+        segments_out().push(seg);
+        
 
     }
 

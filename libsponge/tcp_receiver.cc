@@ -38,7 +38,7 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     
     if(h.syn){
         
-        cout<<"flag:"<<h.syn<<endl;
+        //cout<<"flag:"<<h.syn<<endl;
         isn=h.seqno;
         syned=true;
         //不能return，因为可能出现syn和fin同时set的情况,也可能有data

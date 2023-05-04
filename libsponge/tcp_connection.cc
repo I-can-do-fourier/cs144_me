@@ -49,7 +49,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 
     //std::string state=TCPState::state_summary(_sender);
 
-    
+    if(_sender.next_seqno_absolute() == 0&&seg.header().ack)return;
 
 
     if(hd.rst){
@@ -66,11 +66,17 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _linger_after_streams_finish=false;
     }
     
-    _receiver.segment_received(seg);
+    //待定
+    if(!(_receiver.ackno().has_value()&&seg.header().seqno == _receiver.ackno().value() - 1))_receiver.segment_received(seg);
     if(hd.ack){
 
         _sender.ack_received(hd.ackno,hd.win);
         
+        _sender.fill_window();
+    }
+
+    if(_sender.next_seqno_absolute()==0&&_receiver.ackno().has_value()){
+
         _sender.fill_window();
     }
 

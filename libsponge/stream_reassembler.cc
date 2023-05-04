@@ -285,11 +285,13 @@ int StreamReassembler::overflow(size_t rb){
      * 
     */
 
-    if(_output.bytes_read()+_capacity-1>=rb){
-       return _output.bytes_read()+_capacity-1-rb;
-    }
+    // if(_output.bytes_read()+_capacity-1>=rb){
+    //    return _output.bytes_read()+_capacity-1-rb;
+    // }
 
-    return rb-(_output.bytes_read()+_capacity-1);
+    // return rb-(_output.bytes_read()+_capacity-1);
+
+    return _output.bytes_read()+_capacity-1-rb;
 
 }
 

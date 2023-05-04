@@ -280,7 +280,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     
     DUMMY_CODE(ms_since_last_tick);
 
-    timePassed=ms_since_last_tick+timePassed;
+    //只有当目前有outstandings有segment，或者说有一些segment没有被ack时才会启动定时器。
+    if(outstandings.size()>0) timePassed=ms_since_last_tick+timePassed;
 
     if(outstandings.size()==0)return;
     

@@ -147,7 +147,16 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     }else{
 
         seg_2_seg();
+
+        if(!_linger_after_streams_finish&&_receiver.stream_out().input_ended()
+            &&_sender.stream_in().eof()
+            &&_sender.next_seqno_absolute() ==_sender.stream_in().bytes_written() + 2&&_sender.bytes_in_flight() == 0){
+
+             _active=false;
+        }
     }
+
+
 
     
 

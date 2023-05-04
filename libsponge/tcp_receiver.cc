@@ -47,10 +47,14 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
 
     bool f=h.fin;
 
+    //std::string pl=s.payload().copy();
+
     uint64_t idx=0;
     if(h.syn)idx=0;//这是避免syn被set了，同时segment中还有payload的情况。此时对于stream来说，index位0
+    else if(unwrap(h.seqno,isn,stream_out().bytes_written())==0)return;//侵占了syn的位置
     else idx=unwrap(h.seqno,isn,stream_out().bytes_written())-1;
 
+    //if(idx==0)
     _reassembler.push_substring(s.payload().copy(),idx,f);
 
     //_reassembler.push_substring()

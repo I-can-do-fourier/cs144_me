@@ -49,6 +49,12 @@ std::string combine(const string &s1,const string &s2,const uint64_t index1,cons
 int main(int argc, char const *argv[])
 {
 
+
+    size_t a=100;
+    size_t b=1000;
+
+    printf("minus:%d",a-b);
+
     /**
      * 
      * 
@@ -136,6 +142,7 @@ int main(int argc, char const *argv[])
     cout<<icount<<","<<ecount<<"\n";
 
     printme(m);
+
 
 
 

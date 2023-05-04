@@ -67,7 +67,8 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
     
     //待定
-    if(!(_receiver.ackno().has_value()&&seg.header().seqno == _receiver.ackno().value() - 1))_receiver.segment_received(seg);
+    //if(!(_receiver.ackno().has_value()&&seg.header().seqno == _receiver.ackno().value() - 1))
+    _receiver.segment_received(seg);
     if(hd.ack){
 
         _sender.ack_received(hd.ackno,hd.win);
@@ -142,8 +143,11 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         _active=false;
         
 
+        while(!_sender.segments_out().empty())_sender.segments_out().pop();
 
         _sender.send_empty_segment_RST();
+        
+        while(!segments_out().empty())segments_out().pop();
         seg_2_seg();
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();

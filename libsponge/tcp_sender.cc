@@ -337,7 +337,7 @@ void TCPSender::send_empty_segment_RST() {
 
    hd.seqno=next_seqno();
    
-   hd.rst=true;
+   hd.rst=1;
 
    segments_out().push(seg);
 

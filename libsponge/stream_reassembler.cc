@@ -290,7 +290,8 @@ int StreamReassembler::overflow(size_t rb){
     // }
 
     // return rb-(_output.bytes_read()+_capacity-1);
-
+    
+    //fix bug
     return _output.bytes_read()+_capacity-1-rb;
 
 }

@@ -121,7 +121,7 @@ class TCPSender {
     //! \brief relative seqno for the next byte to be sent
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
     //!@}
-
+    //暂时放在public处,以后修改
     void send_empty_segment_RST();
 };
 

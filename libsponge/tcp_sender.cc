@@ -326,6 +326,7 @@ void TCPSender::send_empty_segment() {
 
 }
 
+//发送RST segment
 void TCPSender::send_empty_segment_RST() {
 
 

@@ -27,7 +27,8 @@ void get_URL(const string &host, const string &path) {
     */
 
      //TCPSocket ts;
-     CS144TCPSocket ts;
+     //CS144TCPSocket ts;
+     FullStackSocket ts;
      Address ad(host,"http");
 
       /*

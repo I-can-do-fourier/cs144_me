@@ -45,14 +45,14 @@ class NetworkInterface {
 
     //self-defined
 
-    std::unordered_map<uint32_t,size_t> since_last_sent{};
+    std::unordered_map<uint32_t,size_t> since_last_sent{};//记录距上次发送arp已经过的时间(针对某个ip)
     
-    std::unordered_map<uint32_t,size_t> cache_time{};    
-    std::unordered_map<uint32_t,EthernetAddress> cache{};
+    std::unordered_map<uint32_t,size_t> cache_time{}; //ip-mac 映射缓存时间
+    std::unordered_map<uint32_t,EthernetAddress> cache{};//ip-mac 映射缓存
 
     //std::unordered_map<uint32_t,EthernetAddress> cache{};
 
-    std::unordered_map<uint32_t,std::list<InternetDatagram>> datagrams{};
+    std::unordered_map<uint32_t,std::list<InternetDatagram>> datagrams{};//由于要等待arp返回映射关系，将待发送的datagram记录下来
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses

@@ -31,12 +31,50 @@ void Router::add_route(const uint32_t route_prefix,
 
     DUMMY_CODE(route_prefix, prefix_length, next_hop, interface_num);
     // Your code here.
+
+    len_map[route_prefix]=prefix_length;
+    itf_map[route_prefix]=interface_num;
+
+    if(next_hop.has_value())gw_map[route_prefix]=(*next_hop).ipv4_numeric();
+    
 }
 
 //! \param[in] dgram The datagram to be routed
 void Router::route_one_datagram(InternetDatagram &dgram) {
     DUMMY_CODE(dgram);
     // Your code here.
+
+    uint8_t m_length=0;
+    size_t itf=0;
+    uint32_t next_hop=2873314305;//没有匹配到时，发到default_router
+
+    auto it=len_map.begin();
+
+    while(it!=len_map.end()){
+
+        uint32_t prefix=(it->first)>>(32-it->second);
+        uint32_t addr=dgram.header().dst;
+        uint32_t addr_mask=addr>>(32-it->second);
+
+        if(addr_mask==prefix&&it->second>m_length){
+
+            m_length=it->second;
+            itf=itf_map[it->first];
+            
+            if(gw_map.find(it->first)==gw_map.end())next_hop=addr;
+            else next_hop=gw_map[it->first];
+        }
+        
+        it++;
+    }
+
+    //if(m_length==0)next_hop=;
+
+    if(dgram.header().ttl-1<=0)return;
+
+    dgram.header().ttl=dgram.header().ttl-1;
+
+    interface(itf).send_datagram(dgram,Address::from_ipv4_numeric(next_hop));
 }
 
 void Router::route() {
